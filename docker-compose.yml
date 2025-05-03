@@ -1,0 +1,73 @@
+version: '3.8'
+
+networks:
+  guare-network:
+    driver: bridge
+
+volumes:
+  composer: {}
+  redis_data: {}
+  db-data: {}
+
+services:
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      args:
+        PGID: "${PGID:-1006}"
+        PUID: "${PUID:-1006}"
+    depends_on:
+      - php
+    container_name: guare-nginx
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./app:/var/www
+      - ./app/var/log/nginx:/var/log/nginx:delegated
+    ports:
+      - "127.0.0.1:80:80"
+    networks:
+      - guare-network
+
+  php:
+    build:
+      context: ./docker/php
+      args:
+        PGID: "${PGID:-1006}"
+        PUID: "${PUID:-1006}"
+        DEVELOP: "true"
+    container_name: guare-php
+    restart: unless-stopped
+    volumes:
+      - ./app:/var/www:rw
+      - composer:/home/www-data/.composer:rw
+    networks:
+      - guare-network
+
+  redis:
+    build:
+      context: ./docker/redis
+    container_name: guare-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data:rw
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - guare-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: guare-postgres
+    restart: unless-stopped
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    networks:
+      - guare-network
