@@ -32,7 +32,6 @@ class ProductControllerCoverTests extends ProductControllerTestHelper
 
         $response = $this->getJson('/products?' . $query);
 
-        dd($randomProduct, $response->content());
         $response->assertStatus(200);
 
         // можно дополнительно проверить, что ни один из продуктов не содержит несоответствующих значений
